@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const saltRounds = 10;
 // parse or stringify data
 app.use(express.json());
@@ -49,8 +50,12 @@ app.post("/login", async (req, res)=>{
     bcrypt.compare(req.body.password, user.password, function(err, result) {
       if (result) {
         //delete user.password;
-        let data = {_id: user._id, username: user.username}
-        res.send(data)
+        // let data = {_id: user._id, username: user.username}
+        // create a token and send to front
+        // payload = { id: user._id }
+        // payload + secret = token
+        var token = jwt.sign({id: user._id }, 'authtesting', { expiresIn: 30});
+        res.send({token})
       } else {
         res.send({msg: "wrong password"})
       }
@@ -59,6 +64,41 @@ app.post("/login", async (req, res)=>{
     res.send({msg: "wrong username"})
   }
 })
+
+app.post("/verify", async (req, res)=>{
+  // return the user data if token is valid
+  // get token from frontend, 
+  if (!req.body.token) {
+    res.send({msg: false})
+  }
+  try {
+    // decrypt and get back user id
+  let payload = jwt.verify(req.body.token, "authtesting")
+
+  // check if user exists with that id
+  if (payload) {
+    let user = await User.findOne({_id: payload.id})
+
+  // if user exists send back user data
+  if (user) {
+    // every verify will give a new token on refresh
+    var token = jwt.sign({id: user._id }, 'authtesting', { expiresIn: 30});
+    res.send({
+      data: user,
+      token: token
+    })
+  } else {
+    res.send("Invalid token")
+  }
+  } else {
+    res.send({"error": true,"message":"Token expired or invalid."})
+  } 
+  } catch (error) {
+    res.status(401).json({'error': error,'message':'Unauthorized'})
+  }
+  
+})
+
 
 
 app.listen(3636, () => {
