@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+require("dotenv").config();
+const URI = process.env.MongoDB_URI;
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const saltRounds = 10;
@@ -17,7 +19,7 @@ const mongoose = require("mongoose");
 main().catch(err => console.log(err));
 
 async function main() {
-  await mongoose.connect('mongodb+srv://Malika:Auma123@cluster0.gffsotd.mongodb.net/?retryWrites=true&w=majority');
+  await mongoose.connect(URI);
 }
 // model
 const User = mongoose.model("User", {
